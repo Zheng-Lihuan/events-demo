@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+  <title>canvas绘制视频</title>
+  <style>
+    #video-wrap {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background-color: yellowgreen;
+      border: 1px solid yellowgreen;
+    }
+
+    #video {
+      width: 100%;
+      height: 100%;
+      background-color: pink;
+    }
+
+
+    #control-video-wrap {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, .1);
+    }
+
+    #play-btn,
+    #pause-btn {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      width: 60px;
+      height: 60px;
+      background: url('./imgs/play-btn.png') no-repeat center center;
+      background-color: auto auto;
+    }
+
+    #pause-btn {
+      display: none;
+      background-image: url('./imgs/pause-btn.png');
+    }
+
+    #video-mask {
+      width: 100%;
+      height: 100%;
+      background-color: red;
+      opacity: .3;
+    }
+
+    #control-footer-wrap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 40px;
+      background-color: rgba(0, 0, 0, .1);
+      background-color: #fff;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 10px;
+    }
+
+    #progress {
+      flex: 1;
+      height: 6px;
+      border-radius: 3px;
+      background-color: rgba(0, 0, 0, 1);
+      margin: 0 20px;
+    }
+
+    #full-screen-btn {
+      width: 30px;
+      height: 30px;
+      background: url('./imgs/requst-full.png') no-repeat center center;
+      background-size: contain;
+      margin-left: 20px;
+    }
+
+    #exit-full-screen-btn {
+      width: 30px;
+      height: 30px;
+      background: url('./imgs/exit-full.png') no-repeat center center;
+      background-size: contain;
+      margin-left: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+    <div id="video-wrap">
+      <video id="video" preload="auto" object-fit="full" x5-video-player-type="h5" x5-video-player-fullscreen="true" webkit-playsinline="true"
+        x-webkit-airplay="true" playsinline="true" x5-playsinline></video>
+      <div id="control-video-wrap">
+        <div id="video-mask"></div>
+        <div id="play-btn"></div>
+        <div id="pause-btn"></div>
+        <div id="control-footer-wrap">
+          <div id="current-play-time">00:00:00</div>
+          <div id="progress"></div>
+          <div id="total-video-time">00:00:00</div>
+          <div id="full-screen-btn"></div>
+          <div id="exit-full-screen-btn"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script>
+    function initDrawVideoToCavnas(params) {
+      let videoWrap = document.querySelector("#video-wrap"); //视频盒子
+      let video = document.querySelector("#video"); //视频组件盒子
+      let control = document.querySelector("#control-video-wrap"); //控制器盒子
+      let control_footer = document.querySelector("#control-footer-wrap"); //控制器底部
+      let mask = document.querySelector("#video-mask"); //控制器遮罩
+      let playBtn = document.querySelector('#play-btn'); //播放按钮
+      let pauseBtn = document.querySelector('#pause-btn'); //暂停按钮
+      let fullBtn = document.querySelector('#full-screen-btn'); //全屏按钮
+      let exitFullBtn = document.querySelector('#exit-full-screen-btn'); //退出全屏按钮
+      let currentTime = document.querySelector('#current-play-time'); //当前播放的时间
+      let totalTime = document.querySelector('#total-video-time'); //总时长
+
+      let timer = null;
+      let show_control = true;
+      let play_video = false; //是否正在播放视频
+
+      //设置视频尺寸
+      if (params.width) {
+        videoWrap.style.width = params.width + 'px';
+      }
+
+      if (params.height) {
+        videoWrap.style.height = params.height + 'px';
+      }
+
+      video.src = params.src;
+      video.poster = params.poster;
+
+      // 1、loadstart：视频查找。当浏览器开始寻找指定的音频/视频时触发，也就是当加载过程开始时
+      video.addEventListener('loadstart', function (e) {
+        // console.log('提示视频的元数据已加载')
+        // console.log(e)
+        // console.log(video.duration) // NaN
+      })
+
+      // 2、durationchange：时长变化。当指定的音频/视频的时长数据发生变化时触发，加载后，时长由 NaN 变为音频/视频的实际时长
+      video.addEventListener('durationchange', function (e) {
+        // console.log('提示视频的时长已改变')
+        // console.log(e)
+        // console.log(video.duration) // 528.981333   视频的实际时长（单位：秒）
+      })
+
+      // 3、loadedmetadata ：元数据加载。当指定的音频/视频的元数据已加载时触发，元数据包括：时长、尺寸（仅视频）以及文本轨道
+      video.addEventListener('loadedmetadata', function (e) {
+        // console.log('提示视频的元数据已加载')
+        // console.log(e)
+      })
+
+      // 4、loadeddata：视频下载监听。当当前帧的数据已加载，但没有足够的数据来播放指定音频/视频的下一帧时触发
+      video.addEventListener('loadeddata', function (e) {
+        // console.log('提示当前帧的数据是可用的')
+        // console.log(e)
+      })
+
+      // 5、progress：浏览器下载监听。当浏览器正在下载指定的音频/视频时触发
+      video.addEventListener('progress', function (e) {
+        // console.log('提示视频正在下载中')
+        // console.log(e)
+      })
+
+      // 6、canplay：可播放监听。当浏览器能够开始播放指定的音频/视频时触发
+      video.addEventListener('canplay', function (e) {
+        // console.log('提示该视频已准备好开始播放',e.target.duration)
+        // console.log(e)
+        // totalTime=e.target.duration;
+        totalTime.innerHTML = formatTime(e.target.duration);
+      })
+
+      // 7、canplaythrough：可流畅播放。当浏览器预计能够在不停下来进行缓冲的情况下持续播放指定的音频/视频时触发
+      video.addEventListener('canplaythrough', function (e) {
+        // console.log('提示视频能够不停顿地一直播放')
+        // console.log(e)
+      })
+
+      // 8、play：播放监听
+      video.addEventListener('play', function (e) {
+        // console.log('提示该视频正在播放中')
+        // console.log(e)
+      })
+
+      // 9、pause：暂停监听
+      video.addEventListener('pause', function (e) {
+        // console.log('暂停播放')
+        // console.log(e)
+      })
+
+      // 10、seeking：查找开始。当用户开始移动/跳跃到音频/视频中新的位置时触发
+      video.addEventListener('seeking', function (e) {
+        // console.log('开始移动进度条')
+        // console.log(e)
+      })
+
+      // 11、seeked：查找结束。当用户已经移动/跳跃到视频中新的位置时触发
+      video.addEventListener('seeked', function (e) {
+        // console.log('进度条已经移动到了新的位置')
+        // console.log(e)
+      })
+
+      // 12、waiting：视频加载等待。当视频由于需要缓冲下一帧而停止，等待时触发
+      video.addEventListener('waiting', function (e) {
+        // console.log('视频加载等待')
+        // console.log(e)
+      })
+
+      // 13、playing：当视频在已因缓冲而暂停或停止后已就绪时触发
+      video.addEventListener('playing', function (e) {
+        // console.log('playing')
+        // console.log(e)
+      })
+
+      // 14、timeupdate：目前的播放位置已更改时，播放时间更新
+      video.addEventListener('timeupdate', function (e) {
+        // console.log('timeupdate')
+        // console.log(e)
+      })
+
+      // 15、ended：播放结束
+      video.addEventListener('ended', function (e) {
+        // console.log('视频播放完了')
+        // console.log(e)
+      })
+
+      // 16、error：播放错误
+      video.addEventListener('error', function (e) {
+        // console.log('视频出错了')
+        // console.log(e)
+      })
+
+      // 17、volumechange：当音量更改时
+      video.addEventListener('volumechange', function (e) {
+        // console.log('volumechange')
+        // console.log(e)
+      })
+
+      // 18、stalled：当浏览器尝试获取媒体数据，但数据不可用时
+      video.addEventListener('stalled', function (e) {
+        // console.log('stalled')
+        // console.log(e)
+      })
+
+      // 19、ratechange：当视频的播放速度已更改时
+      video.addEventListener('ratechange', function (e) {
+        // console.log('ratechange')
+        // console.log(e)
+      })
+
+      //点击播放按钮
+      playBtn.addEventListener('click', function (e) {
+        play_video = true;
+        video.play();
+        playBtn.style.display = "none";
+        control_footer.style.display = "none"
+        show_control = false;
+      })
+
+      //点击暂停按钮
+      pauseBtn.addEventListener('click', function (e) {
+        console.log('点击暂停按钮');
+        video.pause();
+        play_video = false;
+        playBtn.style.display = "block";
+        pauseBtn.style.display = "none"
+      })
+
+      //点击mask
+      mask.addEventListener('click', function (e) {
+        console.log('点击视频mask', show_control);
+
+        if (show_control) {
+          control_footer.style.display = "none"
+          playBtn.style.display = "none";
+          pauseBtn.style.display = "none"
+        } else {
+          //
+          if (play_video) {
+            playBtn.style.display = "none";
+            pauseBtn.style.display = "block"
+          } else {
+            playBtn.style.display = "block";
+            pauseBtn.style.display = "none"
+          }
+          control_footer.style.display = "flex"
+        }
+        show_control = !show_control;
+      })
+
+      //点击全屏
+      fullBtn.addEventListener('click', function (e) {
+        console.log('点击全屏', e);
+
+        if (video.requestFullscreen) {
+          video.requestFullscreen();
+        } else if (video.mozRequestFullScreen) {
+          video.mozRequestFullScreen();
+        } else if (video.msRequestFullscreen) {
+          video.msRequestFullscreen();
+        } else if (video.oRequestFullscreen) {
+          video.oRequestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+          video.webkitRequestFullScreen();
+        }
+      })
+
+      //点击退出全屏
+      exitFullBtn.addEventListener('click', function (e) {
+        console.log('点击播放按钮', video.paused);
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.oRequestFullscreen) {
+          document.oCancelFullScreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        }
+      })
+
+      //展示控制器
+      if (show_control) {
+        control_footer.style.display = "flex"
+        playBtn.style.display = "block"
+      } else {
+        control_footer.style.display = "none"
+        playBtn.style.display = "none"
+      }
+
+      // 格式化时间
+      function formatTime(time) {
+        let total = Math.floor(time);
+        let hour = 0;
+        let minite = 0;
+        let second = 0;
+
+        if (total > 60 * 60) {
+          hour = total / 60 / 60;
+          total = total - hour * 60 * 60;
+        } else if (total > 60) {
+          minite = total / 60;
+          total = total - minite * 60;
+        } else {
+          second = total;
+        }
+        console.log(`${formatNumber(hour)}:${formatNumber(minite)}:${formatNumber(second)}`);
+        return `${formatNumber(hour)}:${formatNumber(minite)}:${formatNumber(second)}`
+      }
+
+      //格式化数字
+      function formatNumber(time) {
+        return time > 10 ? time : `0${time}`
+      }
+
+    }
+
+    initDrawVideoToCavnas({
+      x: 0,
+      y: 0,
+      // width: 640,
+      height: 320,
+      src: 'http://vjs.zencdn.net/v/oceans.mp4',
+      poster: 'https://ss0.bdstatic.com/70cFvHSh_Q1YnxGkpoWK1HF6hhy/it/u=1233532244,1298544442&fm=26&gp=0.jpg',
+    });
+
+
+
+
+
+
+    //每20毫秒画一次图
+    // v.addEventListener('play', function () {
+    //   var i = window.setInterval(function () {
+    //     ctx.drawImage(v, 0, 0, 270, 135);
+    //     //打印当前视频的播放时间
+    //     console.log(v.currentTime);
+    //     //当视频结束的时候去掉循环
+    //     if (v.ended) {
+    //       clearInterval(i)
+    //     }
+    //   }, 20);
+    // }, false);
+    // //将视频暂停，然后观察canvas里面的效果
+    // setTimeout(function () {
+    //   v.pause();
+    // }, 4000);
+    // //将视频播放，然后观察canvas里面的效果
+    // setTimeout(function () {
+    //   v.play();
+    // }, 7000) 
+  </script>
+</body>
+
+</html>

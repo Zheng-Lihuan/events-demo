@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>上传文件</title>
+  <style>
+    #btn {
+      display: block;
+      width: 120px;
+      height: 40px;
+      background-color: yellowgreen;
+      border-radius: 4px;
+      text-align: center;
+      line-height: 40px;
+    }
+  </style>
+</head>
+
+<body>
+  <input type="file" id='f' style="display:none;" />
+  <label id="btn">上传图片</label>
+  <img id='img' style="width: 200px;height:200px;" />
+
+  <script>
+    document.querySelector('#btn').addEventListener('click',function(){
+      document.querySelector("input[type='file']").click()
+    })
+
+    document.getElementById('f').addEventListener('change', function (e) {
+      var file = this.files[0];
+      const img = document.getElementById('img');
+      const url = window.URL.createObjectURL(file);
+      console.log('url', url);
+      img.src = url;
+      img.onload = function () {
+        // 释放一个之前通过调用 URL.createObjectURL创建的 URL 对象
+        window.URL.revokeObjectURL(url);
+      }
+    }, false);
+  </script>
+</body>
+
+</html>

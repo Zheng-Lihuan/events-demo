@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>菜鸟教程(runoob.com)</title>
+  <script>
+    // 页面卸载前
+    window.onbeforeunload = function (e) {
+      localStorage.setItem('onbeforeunload', 'onbeforeunload')
+    };
+
+    // 页面卸载后
+    window.onunload = function (e) {
+      localStorage.setItem('onunload', 'onunload')
+    };
+
+    //页面展示
+    window.addEventListener("pageshow", event => {
+      // console.log('执行pageshow');
+      localStorage.setItem('pageshow', 'pageshow')
+    }, false);
+
+    //页面隐藏
+    window.addEventListener("pagehide", event => {
+      localStorage.setItem('pagehide', 'pagehide')
+    }, false);
+
+    document.addEventListener("visibilitychange", function () {
+      console.log('执行visibilitychange事件');
+      let video = document.querySelector('#video')
+      if (document.visibilityState === 'visible') {
+        console.log('页面展示,播放视频');
+        video.play();
+      } else {
+        console.log('页面隐藏，停止播放视频');
+        video.pause();
+      }
+    });
+  </script>
+</head>
+
+<body>
+  <h1 id="h1">测试页面的一些事件</h1>
+  <p>onbeforeunload onunload pageshow pagehide visibilitychange</p>
+  <a href="http://www.baidu.com">跳转</a>
+  
+  <!-- muted 静音播放（浏览器限制） -->
+  <video muted src="http://vjs.zencdn.net/v/oceans.mp4" id="video" autoplay="autoplay" controls="controls"></video>
+</body>
+
+</html>

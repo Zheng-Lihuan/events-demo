@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>下载文件</title>
+  <style>
+    .btn {
+      display: block;
+      width: 120px;
+      height: 40px;
+      border-radius: 4px;
+      background-color: yellowgreen;
+      text-align: center;
+      line-height: 40px;
+      cursor: pointer;
+    }
+
+    #download {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <input type="file" id="file" class="file" style="display: none;">
+  <label if="" class="btn" id="upload-btn">上传图片</label>
+  <label class="btn" id="download">下载图片</label>
+  <img id="preview" src="" alt="">
+  
+
+  <script>
+    let file_info = null; //文件信息
+
+    document.querySelector('#upload-btn').addEventListener('click',function(){
+      document.querySelector('#file').click();
+    })
+
+    document.querySelector('#file').addEventListener('change', function () {
+      let file = this.files[0]
+      // console.log('file', file);
+      file_info = file;
+      const reader = new FileReader()
+      reader.onload = function () {
+        document.querySelector('#preview').src = reader.result;
+        // console.log('reader', reader.result);
+      }
+      // reader.readAsText(file) //转化为文本
+      // reader.readAsArrayBuffer(file) //转化为2进制
+      reader.readAsDataURL(file); //转化为base64
+    })
+
+    // //下载文件
+    document.querySelector('#download').addEventListener('click', function () {
+      console.log('this.file_info', file_info);
+      let url = URL.createObjectURL(file_info);
+      console.log('url', url);
+      let a = document.createElement('a');
+      a.setAttribute('download', '图片')
+      a.href = url;
+      a.click();
+      window.URL.revokeObjectURL(url)
+    })
+  </script>
+</body>
+
+</html>

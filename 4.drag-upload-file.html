@@ -1,0 +1,50 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>菜鸟教程(runoob.com)</title>
+  <style>
+    #upload {
+      width: 800px;
+      height: 200px;
+      margin: 0 auto;
+      background-color: yellowgreen;
+      border-radius: 10px;
+      text-align: center;
+      line-height: 200px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div id="upload">拖动到当前方框上传文件</div>
+  <script>
+    window.onload = function () {
+      let dom = document.querySelector('#upload')
+
+      dom.addEventListener('dragover',function(e){
+        e.preventDefault()
+        console.log('dropover-拖拽图片文件', e);
+      })
+
+      dom.addEventListener('drop',function(e){
+        e.preventDefault();
+        console.log(e.dataTransfer.files[0]);
+        var f = e.dataTransfer.files[0]; //获取到第一个上传的文件对象
+        var fr = new FileReader(); //实例FileReader对象
+        fr.readAsDataURL(f); //把上传的文件对象转换成url
+        fr.onload = function (e) {
+          console.log(e);
+          // var Url=e.target.result;//上传文件的URL
+          var Url = this.result; //上传文件的URL
+          dom.innerHTML += '<img src="' + Url + '" alt="">';
+        }
+      })
+    }
+  </script>
+
+</body>
+
+</html>

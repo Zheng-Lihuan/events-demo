@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+  <style>
+    .container{
+      width: 200px;
+      height: 300px;
+      background: #ff0000;
+    }
+
+    .item{
+      width: 200px;
+      height: 100px;
+      background: pink;
+    }
+
+    .dragOver{
+      background: rgba(255, 0, 0, 0.5);
+    }
+    .hidden{
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id='container' 
+  ondragleave="dragleave(event)" 
+  ondragenter="dragenter(event)" 
+  ondrop="drop(event)" 
+  ondragover="dragover(event)"
+  ></div>
+
+  <div class="item" draggable="true" 
+  ondragstart="dragStart(event)" 
+  ondrag="drag(event)" 
+  ondragend="dragend(event)"
+  id="item"></div>
+  <img src="./3.jpg" class="hidden"/>
+  <script>
+
+    // 源对象：
+    // dragstart：源对象开始拖放，开始移动时事件触发
+    // drag：源对象拖放过程中，移动被拖拽对象时触发
+    // dragend：源对象拖放结束，整个拖放操作结束时触发。
+
+    // 过程对象：
+    // dragenter：源对象进入过程对象范围内，被拖拽对象进入过程对象时被触发
+    // dragover：源对象在过程对象范围内移动，被拖拽对象在过程对象内移动时触发
+    // dragleave：源对象离开过程对象的范围，被拖拽对象离开目标对象时触发
+
+    // 目标对象：
+    // drop：源对象拖放到目标对象中，目标对象完全接受被拖拽对象时触发，可理解为在目标对象内松手时触发。
+
+    // dataTransfer 对象
+
+    // dataTransfer 对象概述
+    // - dataTransfer 对象提供了对于预定义的剪贴板格式的访问，以便在拖放中使用。它使自定义处理拖放操作称为可能
+    // - 可以通过 dataTransfer 对象保存拖放过程中各组件所涉及到的数据
+
+    // 参考地址
+    // https://blog.csdn.net/hjc256/article/details/89021483
+
+
+    function dragStart(e){
+      console.log('dragStart');
+      e.dataTransfer.setData('id', e.target.id);
+      let image = document.querySelector('img').cloneNode();
+      image.classList.remove('hidden');
+      e.dataTransfer.setDragImage(image,150,150);
+    }
+
+    function drag(e){
+      // console.log('drag');
+    }
+    
+    function dragend(e){
+      console.log('dragend');
+    }
+
+    function dragenter(e){
+      console.log('dragenter');
+      e.preventDefault();
+    }
+
+    function dragover(e){
+      // console.log('dragover');
+      e.preventDefault();
+      e.target.classList.add('dragOver');
+    }
+
+    function dragleave(e){
+      console.log('dragleave');
+      e.dataTransfer.dropEffect = 'copy';
+      e.target.classList.remove('dragOver');
+    }    
+
+    function drop(e){
+      console.log('drop');
+      e.preventDefault();
+      
+      let id = e.dataTransfer.getData('id');
+      e.target.appendChild(document.getElementById(id));
+    }
+  </script>
+</body>
+</html>
